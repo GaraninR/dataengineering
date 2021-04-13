@@ -1,0 +1,5 @@
+url: https://robot-dreams-de-api.herokuapp.com
+auth:
+  username: "rd_dreams"
+  password: "djT6LasE"
+output_dir: "stok_state"
