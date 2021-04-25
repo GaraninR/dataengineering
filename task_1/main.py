@@ -4,17 +4,19 @@ import json
 
 from pathlib import Path
 
+
 def load_config(config_path):
     with open(config_path, mode='rt') as yaml_file:
         config = yaml.safe_load(yaml_file)
 
     return config
 
+
 def save_result(config, date_of_load, json_data):
 
     output_dir = config['output_dir']
     path_for_data_file = output_dir + '/' + date_of_load
-    
+
     # check output dir
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
@@ -46,8 +48,8 @@ def app(config, date_of_load):
 if __name__ == '__main__':
 
     date_of_load = "2021-04-01"
-    
+
     config = load_config("config.yaml")
     app(config, date_of_load)
 
-    
+
