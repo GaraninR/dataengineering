@@ -17,6 +17,7 @@ with sum_all as (
 	where upper(ct.city) like 'A%' or ct.city like '%-%'
 	group by ct.city, cat."name" 
 ) 
-select coalesce(sum_hours, 0) sum_fin, city, category from sum_all
+select sum(coalesce(sum_hours, 0)) sum_fin, category from sum_all
+group by category
 order by sum_fin desc
 limit 1;
