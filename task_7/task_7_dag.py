@@ -3,12 +3,15 @@ from datetime import datetime
 from airflow import DAG
 import json
 import requests
+import csv
 from pathlib import Path
 
 from airflow.exceptions import AirflowException
 from airflow.operators.http_operator import SimpleHttpOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.hooks.http_hook import HttpHook
 from airflow.hooks.base_hook import BaseHook
+from airflow.hooks.postgres_hook import PostgresHook
 
 
 class AuthOperator(SimpleHttpOperator):
@@ -85,19 +88,41 @@ class GetStokStateOperator(SimpleHttpOperator):
 
         # check output dir
         Path(self.output_dir).mkdir(parents=True, exist_ok=True)
-
         Path(path_for_data_file).mkdir(parents=True, exist_ok=True)
 
         with open(path_for_data_file + '/data.json', 'w') as outfile:
             json.dump(response.json(), outfile)
 
 
-class SaveDataFromDatabase(SimpleHttpOperator):
-    def __init__(self, *args, **kwargs):
+class SaveDataFromDatabase(PostgresOperator):
+    def __init__(self, save_path, *args, **kwargs):
         super(SaveDataFromDatabase, self).__init__(*args, **kwargs)
+        self.save_path = save_path
 
     def execute(self, context):
-        print("Execute!")
+
+        self.log.info('Executing the query to the database')
+        self.hook = PostgresHook(postgres_conn_id=self.postgres_conn_id,
+                                 schema=self.database)
+        
+        conn = self.hook.get_conn()
+        cursor = conn.cursor()
+        cursor.execute(self.sql)
+        result = cursor.fetchall()
+
+        # check output dir
+        Path(self.save_path).mkdir(parents=True, exist_ok=True)
+
+        # generate filename
+        current_date = datetime.today().strftime('%Y-%m-%d')
+        backup_file_path = "{0}/{1}.csv".format(self.save_path, current_date)
+        
+        # bakup to csv
+        temp_path = backup_file_path
+        with open(temp_path, 'w') as fp:
+            a = csv.writer(fp, quoting = csv.QUOTE_MINIMAL, delimiter = ',')
+            a.writerow([i[0] for i in cursor.description])
+            a.writerows(result)
 
 
 default_args = {
@@ -132,6 +157,13 @@ t2 = GetStokStateOperator(
 
 t3 = SaveDataFromDatabase(
     task_id='save_data_from_database',
+    postgres_conn_id='aaa_postgres_conn_id',
+    save_path="full_database_bakup",
+    sql="""select * from orders o
+                    join products p on o.product_id  = p.product_id
+                    join aisles a on a.aisle_id = p.aisle_id 
+                    join departments d on d.department_id = p.department_id 
+                    join clients c on c.client_id = o.client_id""",
     dag=dag
 )
 
