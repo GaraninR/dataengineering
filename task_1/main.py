@@ -25,10 +25,12 @@ def save_result(config, date_of_load, json_data):
     with open(path_for_data_file + '/data.json', 'w') as outfile:
         json.dump(json_data, outfile)
 
+
 def app(config, date_of_load):
     resource = config['url'] + '/auth'
-    headers = { 'content-type': 'application/json' }
-    data = {"username": config['auth']['username'], "password": config['auth']['password']}
+    headers = {'content-type': 'application/json'}
+    data = {"username": config['auth']['username'],
+            "password": config['auth']['password']}
 
     result = requests.post(resource, data=json.dumps(data), headers=headers)
 
@@ -38,7 +40,7 @@ def app(config, date_of_load):
     resource = config['url'] + '/out_of_stock'
 
     payload = {"date": date_of_load}
-    headers = { 'content-type': 'application/json', 'Authorization': token}
+    headers = {'content-type': 'application/json', 'Authorization': token}
 
     result = requests.get(resource, data=json.dumps(payload), headers=headers)
 
@@ -51,5 +53,3 @@ if __name__ == '__main__':
 
     config = load_config("config.yaml")
     app(config, date_of_load)
-
-
